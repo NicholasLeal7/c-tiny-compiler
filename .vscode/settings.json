@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "sintatico.h": "c",
+        "lexico.h": "c"
+    }
+}
