@@ -9,7 +9,7 @@ TAtomo lookahead;
 TInfoAtomo info_atomo;
 
 
-// E ::= a | b | +EE | *EE
+// E ::= a | b | +EE | *EE 
 void E(){
     switch( lookahead ){
         case OP_SOMA:

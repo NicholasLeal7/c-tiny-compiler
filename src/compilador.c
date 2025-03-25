@@ -679,68 +679,206 @@ void consome(Tatomo atomo)
 
 void program()
 {
+    consome(VOID);
+    consome(MAIN);
+    consome(ABRE_PAR);
+    consome(VOID);
+    consome(FECHA_PAR);
+    compound_smt();
 }
 
 void compound_smt()
 {
+    consome(ABRE_CHAVES);
+    //{} ver o que faz aqui
+    if (lookahead == INT || lookahead == CHAR)
+    {
+        var_decl();
+        stmt();
+    }
+    consome(FECHA_CHAVES);
 }
 
 void var_decl()
 {
+    type_specifier();
+    var_decl_list();
+    consome(FECHA_CHAVES);
 }
 
 void type_specifier()
 {
+    consome(lookahead);
 }
 
 void var_decl_list()
 {
+    variable_id();
+    while (lookahead == VIR)
+    {
+        consome(VIR);
+        variable_id();
+    }
 }
 
 void variable_id()
 {
+    consome(IDENTIFICADOR);
+    if (lookahead == RECEBE)
+    {
+        consome(RECEBE);
+        expr();
+    }
 }
 
 void stmt()
 {
+    if (lookahead == ABRE_CHAVES)
+    {
+        compound_smt();
+    }
+    else if (lookahead == IDENTIFICADOR)
+    {
+        assig_stmt();
+    }
+    else if (lookahead == IF)
+    {
+        cond_stmt();
+    }
+    else if (lookahead == WHILE)
+    {
+        while_stmt();
+    }
+    else if (lookahead == READINT)
+    {
+        consome(READINT);
+        consome(ABRE_PAR);
+        consome(IDENTIFICADOR);
+        consome(FECHA_PAR);
+        consome(PVIR);
+    }
+    else if (lookahead == WRITEINT)
+    {
+        consome(WRITEINT);
+        consome(ABRE_PAR);
+        expr();
+        consome(FECHA_PAR);
+        consome(PVIR);
+    }
+    else
+    {
+        consome(IDENTIFICADOR); // erro
+    }
 }
 
 void assig_stmt()
 {
+    consome(IDENTIFICADOR);
+    consome(RECEBE);
+    expr();
+    consome(PVIR);
 }
 
 void cond_stmt()
 {
+    consome(IF);
+    consome(ABRE_PAR);
+    expr();
+    consome(FECHA_PAR);
+    stmt();
+
+    if (lookahead == ELSE)
+    {
+        consome(ELSE);
+        stmt();
+    }
 }
 
 void while_stmt()
 {
+    consome(WHILE);
+    consome(ABRE_PAR);
+    expr();
+    consome(FECHA_PAR);
+    stmt();
 }
 
 void expr()
 {
+    conjunction();
+    while (lookahead == OR)
+    {
+        consome(OR);
+        conjunction();
+    }
 }
 
 void conjunction()
 {
+    comparision();
+    while (lookahead == AND)
+    {
+        consome(AND);
+        comparision();
+    }
 }
 
 void comparision()
 {
+    sum();
+    if (lookahead == MENOR || lookahead == MENOR_IGUAL || lookahead == IGUAL || lookahead == DIFERENTE || lookahead == MAIOR || lookahead == MAIOR_IGUAL)
+    {
+        relation();
+        sum();
+    }
 }
 
 void relation()
 {
+    if (lookahead == MENOR || lookahead == MENOR_IGUAL || lookahead == IGUAL || lookahead == DIFERENTE || lookahead == MAIOR || lookahead == MAIOR_IGUAL)
+    {
+        consome(lookahead);
+    }
+    else
+    {
+        consome(IDENTIFICADOR); // erro
+    }
 }
 
 void sum()
 {
+    term();
+    while (lookahead == OP_SOMA || lookahead == OP_SUBT)
+    {
+        consome(lookahead);
+        term();
+    }
 }
 
 void term()
 {
+    factor();
+    while (lookahead == OP_MULT || lookahead == OP_DIV)
+    {
+        consome(lookahead);
+        factor();
+    }
 }
 
 void factor()
 {
+    if (lookahead == INTCONST || lookahead == CHARCONST || lookahead == IDENTIFICADOR)
+    {
+        consome(lookahead);
+    }
+    else if (lookahead == ABRE_PAR)
+    {
+        consome(ABRE_PAR);
+        expr();
+        consome(FECHA_PAR);
+    }
+    else
+    {
+        consome(IDENTIFICADOR); // erro
+    }
 }
