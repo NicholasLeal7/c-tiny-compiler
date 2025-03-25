@@ -38,6 +38,7 @@ typedef enum
     OP_SUBT,
     OP_MULT,
     OP_DIV,
+    COMENTARIO,
     EOS
 } Tatomo;
 
@@ -85,13 +86,12 @@ char *strAtomo[] = {
     "OP_SUBT",       // 29
     "OP_MULT",       // 30
     "OP_DIV",        // 31
-    "EOS"            // 32
+    "COMENTARIO",    // 32
+    "EOS"            // 33
 };
 int linha = 1;
 Tatomo lookahead;
 TInfoAtomo info_atomo;
-
-// SINTATICO
 
 // declaração de função
 TInfoAtomo obter_atomo();
@@ -101,44 +101,23 @@ TInfoAtomo reconhece_intconst();
 TInfoAtomo reconhece_operadores();
 TInfoAtomo reconhece_sinais();
 TInfoAtomo reconhece_palavras_reservadas(char *str);
+TInfoAtomo reconhece_comentarios();
 
+// declaração de funções auxiliares que funcionam como o isdigit e isalpha só que para operadores e sinais
 int eh_operador(char operador);
 int eh_sinal(char sinal);
 
 // palavra em teste
-char *entrada = "int main Main void VOid";
+char *entrada = "/*programa le a o maior*/void //main ( void ) {\nasas//asa\nwj//ej";
 
 int main()
 {
-    // apresentação
-    printf("Compilador TINY-C\n\n");
-
-    //******** INICIO - variaveis e leitura do arquivo *******
-    FILE *arquivo = fopen("entrada.txt", "r");
-    char conteudo[10000], c;
-    int i = 0, tam = sizeof(conteudo) - 1;
-
-    if (arquivo == NULL)
-    {
-        printf("Arquivo não encontrado.");
-        return 0;
-    }
-
-    while ((c = fgetc(arquivo)) != EOF && i < tam)
-    {
-        conteudo[i++] = c;
-    }
-
-    // buffer = conteudo;
-    // printf("Conteudo:\n %s", buffer);
-    fclose(arquivo);
-    //******** FIM - variaveis e leitura do arquivo *******
-
     //******** INICIO - compilador *******
     do
     {
         info_atomo = obter_atomo();
         printf("#  %d: %s", linha, strAtomo[info_atomo.atomo]);
+        linha += info_atomo.linha;
 
         if (info_atomo.atomo == INTCONST)
         {
@@ -151,11 +130,7 @@ int main()
 
         printf("\n");
     } while (info_atomo.atomo != ERRO && info_atomo.atomo != EOS);
-    // lookahead = info_atomo.atomo;
-
-    // chamar regra inicial da gramática
     //******** FIM - compilador *******
-
     return 0;
 }
 
@@ -163,6 +138,7 @@ TInfoAtomo obter_atomo()
 {
     TInfoAtomo info_atomo;
     info_atomo.atomo = ERRO;
+    int linhaAuxiliar = 0;
 
     // delimitadores e retorno de carro
     while (*entrada == ' ' ||
@@ -184,7 +160,13 @@ TInfoAtomo obter_atomo()
     }
 
     // identificação dos outros variáveis, operadores, palavras reservadas e afins
-    if (*entrada == '0')
+    if (*entrada == '/')
+    {
+        // ele retorna token de comentários ou o operador de divisão
+        info_atomo = reconhece_comentarios();
+        linhaAuxiliar = info_atomo.linha;
+    }
+    else if (*entrada == '0')
     {
         info_atomo = reconhece_intconst();
     }
@@ -206,6 +188,7 @@ TInfoAtomo obter_atomo()
         info_atomo = reconhece_sinais();
     }
 
+    info_atomo.linha = linhaAuxiliar;
     return info_atomo;
 }
 
@@ -522,7 +505,7 @@ TInfoAtomo reconhece_sinais()
     return info_sinais;
 }
 
-// reconhece - palavras reservadas
+// reconhece - palavras reservadas e comentários
 TInfoAtomo reconhece_palavras_reservadas(char *str)
 {
     TInfoAtomo info_palavra_reservada;
@@ -575,6 +558,58 @@ TInfoAtomo reconhece_palavras_reservadas(char *str)
     return info_palavra_reservada;
 }
 
+TInfoAtomo reconhece_comentarios()
+{
+    TInfoAtomo info_comentarios;
+    info_comentarios.atomo = ERRO;
+    info_comentarios.linha = 0;
+
+    if (*entrada == '/')
+    {
+        entrada++;
+        if (*entrada == '/')
+        {
+            // comentário de uma linha
+            info_comentarios.atomo = COMENTARIO;
+            while (*entrada != '\0')
+            {
+                if (*entrada == '\n')
+                {
+                    break;
+                }
+                entrada++;
+            }
+        }
+        else if (*entrada == '*')
+        {
+            // comentário de muitas linha
+            info_comentarios.atomo = COMENTARIO;
+            while (*entrada != '\0')
+            {
+                if (*entrada == '*')
+                {
+                    entrada++;
+                    if (*entrada == '/')
+                    {
+                        entrada++; // consumimos / pois se não ele será lido como operador div
+                        break;
+                    }
+                }
+                else if (*entrada == '\n')
+                {
+                    info_comentarios.linha++;
+                }
+                entrada++;
+            }
+        }
+        else
+        {
+            info_comentarios.atomo = OP_DIV;
+        }
+    }
+
+    return info_comentarios;
+}
 // auxiliares
 int eh_operador(char operador)
 {
