@@ -17,5 +17,5 @@ para reconhecer palavras reservadas, então acabou sendo apropriado.
 8 caracteres, pois 0xFFFFFFFF é o maior número que é possível de se fazer na notação hexa com um tipo inteiro de 32 bits.
 Então, a minha função que reconhece números, retorna ERRO caso tenha mais de 8 caractéres + 2(0x).
 
-# A verificação do caracter / está na função reconhece_sinais, portanto a tratativa de comentários será feita
-dentro daquela função
+# O analisador léxico foi finalizado com a criação das funções que reconhece as palavras reservadas e pela a que
+reconhece os comentários e adapta suas linhas, sem muitas complicações.

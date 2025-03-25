@@ -51,7 +51,6 @@ typedef struct
 } TInfoAtomo;
 
 // LEXICO
-char *buffer;
 char strOperadores[] = {};
 char *strAtomo[] = {
     "ERRO",          // 0
@@ -93,7 +92,7 @@ int linha = 1;
 Tatomo lookahead;
 TInfoAtomo info_atomo;
 
-// declaração de função
+// declaração de função do léxico
 TInfoAtomo obter_atomo();
 TInfoAtomo reconhece_id();
 TInfoAtomo reconhece_charconst();
@@ -102,6 +101,26 @@ TInfoAtomo reconhece_operadores();
 TInfoAtomo reconhece_sinais();
 TInfoAtomo reconhece_palavras_reservadas(char *str);
 TInfoAtomo reconhece_comentarios();
+
+// declaração de função do sintático
+void consome(Tatomo atomo);
+void program();
+void compound_smt();
+void var_decl();
+void type_specifier();
+void var_decl_list();
+void variable_id();
+void stmt();
+void assig_stmt();
+void cond_stmt();
+void while_stmt();
+void expr();
+void conjunction();
+void comparision();
+void relation();
+void sum();
+void term();
+void factor();
 
 // declaração de funções auxiliares que funcionam como o isdigit e isalpha só que para operadores e sinais
 int eh_operador(char operador);
@@ -610,6 +629,7 @@ TInfoAtomo reconhece_comentarios()
 
     return info_comentarios;
 }
+
 // auxiliares
 int eh_operador(char operador)
 {
@@ -641,4 +661,86 @@ int eh_sinal(char sinal)
         return 1;
     }
     return 0;
+}
+
+// funções sintáticas e afins.
+void consome(Tatomo atomo)
+{
+    if (lookahead == atomo)
+    {
+        info_atomo = obter_atomo();
+        lookahead = info_atomo.atomo;
+    }
+    else
+    {
+        printf("Erro sintático");
+    }
+}
+
+void program()
+{
+}
+
+void compound_smt()
+{
+}
+
+void var_decl()
+{
+}
+
+void type_specifier()
+{
+}
+
+void var_decl_list()
+{
+}
+
+void variable_id()
+{
+}
+
+void stmt()
+{
+}
+
+void assig_stmt()
+{
+}
+
+void cond_stmt()
+{
+}
+
+void while_stmt()
+{
+}
+
+void expr()
+{
+}
+
+void conjunction()
+{
+}
+
+void comparision()
+{
+}
+
+void relation()
+{
+}
+
+void sum()
+{
+}
+
+void term()
+{
+}
+
+void factor()
+{
 }
