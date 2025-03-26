@@ -63,10 +63,10 @@ char *strAtomo[] = {
     "FECHA_PAR",     // 7
     "ABRE_CHAVES",   // 8
     "FECHA_CHAVES",  // 9
-    "PVIR",          // 10
+    "PONTO_VIRGULA", // 10
     "INT",           // 11
     "CHAR",          // 12
-    "VIR",           // 13
+    "VIRGULA",       // 13
     "RECEBE",        // 14
     "READINT",       // 15
     "WRITEINT",      // 16
@@ -85,6 +85,42 @@ char *strAtomo[] = {
     "OP_SUBT",       // 29
     "OP_MULT",       // 30
     "OP_DIV",        // 31
+    "COMENTARIO",    // 32
+    "EOS"            // 33
+};
+char *strAtomoSimbolos[] = {
+    "ERRO",          // 0
+    "identificador", // 1
+    "charconst",     // 2
+    "intconst",      // 3
+    "void",          // 4
+    "main",          // 5
+    "(",             // 6
+    ")",             // 7
+    "{",             // 8
+    "}",             // 9
+    ";",             // 10
+    "int",           // 11
+    "char",          // 12
+    ",",             // 13
+    "=",             // 14
+    "readint",       // 15
+    "writeint",      // 16
+    "if",            // 17
+    "else",          // 18
+    "while",         // 19
+    "||",            // 20
+    "&&",            // 21
+    "<",             // 22
+    "<=",            // 23
+    "==",            // 24
+    "!=",            // 25
+    ">",             // 26
+    ">=",            // 27
+    "+",             // 28
+    "-",             // 29
+    "*",             // 30
+    "/",             // 31
     "COMENTARIO",    // 32
     "EOS"            // 33
 };
@@ -127,23 +163,68 @@ int eh_operador(char operador);
 int eh_sinal(char sinal);
 
 // palavra em teste
-// char *entrada = "/*programa le a o maior*/void //main ( void ) {\nasas//asa\nwj//ej";
-char *entrada = "\n\n\nvoid main(void){\nint num_1,num_2;readint(num_1);}";
-// char *entrada = "\n\n\nvoid main(void){\nint num_1,num_2;if(num_1 > num_2) num_1 = num_2;}";
+// char *entrada = "/* \nprograma le dois numessros inteir e encontra o maior  \n*/ \nvoid main ( void ) { \n int aaaaaaaa, num_2, maior; \nreadint(num_1); \nreadint(num_2); \nif ( num_1 > num_2 )  \n    maior = num_1; \nelse \n    maior = num_2; \n \nwriteint(maior); // imprime o maior valor \n}";
+char *entrada;
+
+#include <stdio.h>
+#include <stdlib.h>
 
 int main()
 {
-    //******** INICIO - compilador *******
+    //******** INICIO - apresentação e leitura do arquivo *******
     printf("Compilador TINY-C\n\n");
 
+    char nome_arquivo[256];
+
+    printf("Digite o nome do arquivo:\n");
+    scanf("%255s", nome_arquivo);
+    //******** FIM - apresentação e leitura do arquivo *******
+
+    //******** INICIO - leitura do arquivo *******
+    FILE *arquivo = fopen(nome_arquivo, "r");
+    char conteudo[100000], c;
+    int i = 0, tam = sizeof(conteudo) - 1;
+
+    if (arquivo == NULL)
+    {
+        printf("Arquivo nao encontrado.\n");
+        return 0;
+    }
+
+    while ((c = fgetc(arquivo)) != EOF && i < tam)
+    {
+        conteudo[i++] = c;
+    }
+
+    // garante que a string acabe corretamente e aloca memória dinamicamente a entrada.
+    conteudo[i] = '\0';
+    entrada = (char *)malloc(i + 1);
+
+    // verifica se o arquivo existe
+    if (entrada == NULL)
+    {
+        printf("Erro ao alocar memória.\n");
+        return 1;
+    }
+
+    // copia o conteúdo para entrada.
+    strcpy(entrada, conteudo);
+
+    fclose(arquivo);
+    //******** FIM - leitura do arquivo *******
+
+    //******** INICIO - compilador *******
     info_atomo = obter_atomo();
     lookahead = info_atomo.atomo;
 
     program();
 
-    printf("Programa sintaticamente correto");
-
+    printf("\n%d linhas analisadas, programa sintaticamente correto.", linha);
     //******** FIM - compilador *******
+
+    // libera memória alocada aqui.
+    free(entrada);
+
     return 0;
 }
 
@@ -151,7 +232,8 @@ TInfoAtomo obter_atomo()
 {
     TInfoAtomo info_atomo;
     info_atomo.atomo = ERRO;
-    int linhaAuxiliar = 0;
+
+    int eh_comentario = 0;
 
     // delimitadores e retorno de carro
     while (*entrada == ' ' ||
@@ -177,7 +259,10 @@ TInfoAtomo obter_atomo()
     {
         // ele retorna token de comentários ou o operador de divisão
         info_atomo = reconhece_comentarios();
-        linhaAuxiliar = info_atomo.linha;
+        if (info_atomo.atomo == COMENTARIO)
+        {
+            eh_comentario = 1;
+        }
     }
     else if (*entrada == '0')
     {
@@ -201,7 +286,20 @@ TInfoAtomo obter_atomo()
         info_atomo = reconhece_sinais();
     }
 
-    info_atomo.linha = linhaAuxiliar;
+    // condicional para armazenar em qual linha o comentário começou
+    // sem ele, o comentário só contaria a linha que terminou e não a primeira linha
+    if (!eh_comentario)
+    {
+        info_atomo.linha = linha;
+    }
+
+    // condicional para encerrar o programa caso um erro léxico seja encontrado.
+    // retorna o caracter que gerou o erro lexico
+    if (info_atomo.atomo == ERRO)
+    {
+        printf("#  %02d: Erro lexico: caracter [%c] nao reconhecido.\n", linha, *entrada);
+        exit(1);
+    }
     return info_atomo;
 }
 
@@ -211,7 +309,7 @@ TInfoAtomo reconhece_id()
     TInfoAtomo info_id;
     info_id.atomo = ERRO;
     int maximo_char = 0;
-    char str_id[15];
+    char str_id[16];
     char *ini_id = entrada;
 
     // q0;
@@ -226,6 +324,8 @@ TInfoAtomo reconhece_id()
 q1:
     if (maximo_char > 15)
     {
+        printf("#  %02d: Erro lexico: identificador ultrapassa 15 caracteres.\n", linha);
+        exit(1);
         return info_id;
     }
 
@@ -292,7 +392,7 @@ TInfoAtomo reconhece_intconst()
     TInfoAtomo info_num;
     info_num.atomo = ERRO;
     int maximo_num = 0;
-    char str_num[10];
+    char str_num[11];
     char *ini_num = entrada, *endptr;
 
     // q0:
@@ -331,6 +431,8 @@ q2:
 q3:
     if (maximo_num > 10)
     {
+        printf("#  %02d: Erro lexico: intconst ultrapassa 10 caracteres.\n", linha);
+        exit(1);
         return info_num;
     }
 
@@ -575,7 +677,6 @@ TInfoAtomo reconhece_comentarios()
 {
     TInfoAtomo info_comentarios;
     info_comentarios.atomo = ERRO;
-    info_comentarios.linha = 0;
 
     if (*entrada == '/')
     {
@@ -584,6 +685,7 @@ TInfoAtomo reconhece_comentarios()
         {
             // comentário de uma linha
             info_comentarios.atomo = COMENTARIO;
+            info_comentarios.linha = linha;
             while (*entrada != '\0')
             {
                 if (*entrada == '\n')
@@ -597,27 +699,37 @@ TInfoAtomo reconhece_comentarios()
         {
             // comentário de muitas linha
             info_comentarios.atomo = COMENTARIO;
+            info_comentarios.linha = linha;
             while (*entrada != '\0')
             {
+                int alteradoPreviamente = 0;
+
+                if (*entrada == '\n')
+                {
+                    linha++;
+                }
+
                 if (*entrada == '*')
                 {
                     entrada++;
+                    alteradoPreviamente = 1;
                     if (*entrada == '/')
                     {
                         entrada++; // consumimos / pois se não ele será lido como operador div
                         break;
                     }
                 }
-                else if (*entrada == '\n')
+
+                if (!alteradoPreviamente)
                 {
-                    info_comentarios.linha++;
+                    entrada++;
                 }
-                entrada++;
             }
         }
         else
         {
             info_comentarios.atomo = OP_DIV;
+            info_comentarios.linha = linha;
         }
     }
 
@@ -660,20 +772,36 @@ int eh_sinal(char sinal)
 // funções sintáticas e afins.
 void consome(Tatomo atomo)
 {
+
     while (lookahead == COMENTARIO)
     {
+        // exibição do token reconhecido
+        printf("#  %02d: %s\n", info_atomo.linha, strAtomo[lookahead]);
+
         info_atomo = obter_atomo();
         lookahead = info_atomo.atomo;
     }
 
     if (lookahead == atomo)
     {
+        // exibição do token reconhecido
+        printf("#  %02d: %s", info_atomo.linha, strAtomo[lookahead]);
+        if (info_atomo.atomo == IDENTIFICADOR || info_atomo.atomo == CHARCONST)
+        {
+            printf(" | %s", info_atomo.atributo_ID);
+        }
+        else if (info_atomo.atomo == INTCONST)
+        {
+            printf(" | %d", info_atomo.atributo_numero);
+        }
+        printf("\n");
+
         info_atomo = obter_atomo();
         lookahead = info_atomo.atomo;
     }
     else
     {
-        printf("#%d: Erro sintatico: esperado [%s], encontrado [%s]", linha, strAtomo[atomo], strAtomo[lookahead]);
+        printf("#  %02d: Erro sintatico: esperado [%s], encontrado [%s]", linha, strAtomoSimbolos[atomo], strAtomoSimbolos[lookahead]);
         exit(1);
     }
 }
@@ -691,10 +819,9 @@ void program()
 void compound_smt()
 {
     consome(ABRE_CHAVES);
-    //{} ver o que faz aqui
-    if (lookahead == INT || lookahead == CHAR)
+    var_decl();
+    while (lookahead == READINT || lookahead == WRITEINT || lookahead == WHILE || lookahead == IF || lookahead == IDENTIFICADOR)
     {
-        var_decl();
         stmt();
     }
     consome(FECHA_CHAVES);
@@ -702,9 +829,12 @@ void compound_smt()
 
 void var_decl()
 {
-    type_specifier();
-    var_decl_list();
-    consome(PVIR);
+    if (lookahead == INT || lookahead == CHAR)
+    {
+        type_specifier();
+        var_decl_list();
+        consome(PVIR);
+    }
 }
 
 void type_specifier()

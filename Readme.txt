@@ -19,3 +19,12 @@ Então, a minha função que reconhece números, retorna ERRO caso tenha mais de
 
 # O analisador léxico foi finalizado com a criação das funções que reconhece as palavras reservadas e pela a que
 reconhece os comentários e adapta suas linhas, sem muitas complicações.
+
+# A análise sintática foi concluída sem muitas ressalvas, porém eu me baseei no enunciado desatualizado erroneamente e 
+perdi um bom tempo tentando encontrar lógica na gramática. Quando abri o moodle para enviar uma mensagem questionando, vi que
+havia uma mensagem informando que a gramática recebeu ajustes, aí sim funcionou de verdade,
+
+# Na hora de contar as linhas, em obter_atomo(), a função reconhecer_comentarios() possui uma individualidade. Todos os átomos
+reconhecidos podem ter sua respectiva linha atribuída exatamente antes de retornarmos o TInfoAtomo, pois nenhuma função, com exceção
+do reconhece_comentarios(), modifica a variável global de linhas. Portanto, a atribuição da linha em que o comentário se iniciou é feito
+dentro da função de comentários e caso o estejamos analisando um comentário, a parte de atualizar antes do retorno deve ser ignorada.
