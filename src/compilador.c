@@ -127,28 +127,22 @@ int eh_operador(char operador);
 int eh_sinal(char sinal);
 
 // palavra em teste
-char *entrada = "/*programa le a o maior*/void //main ( void ) {\nasas//asa\nwj//ej";
+// char *entrada = "/*programa le a o maior*/void //main ( void ) {\nasas//asa\nwj//ej";
+char *entrada = "\n\n\nvoid main(void){\nint num_1,num_2;readint(num_1);}";
+// char *entrada = "\n\n\nvoid main(void){\nint num_1,num_2;if(num_1 > num_2) num_1 = num_2;}";
 
 int main()
 {
     //******** INICIO - compilador *******
-    do
-    {
-        info_atomo = obter_atomo();
-        printf("#  %d: %s", linha, strAtomo[info_atomo.atomo]);
-        linha += info_atomo.linha;
+    printf("Compilador TINY-C\n\n");
 
-        if (info_atomo.atomo == INTCONST)
-        {
-            printf(" | %d", info_atomo.atributo_numero);
-        }
-        else if (info_atomo.atomo == IDENTIFICADOR || info_atomo.atomo == CHARCONST)
-        {
-            printf(" | %s", info_atomo.atributo_ID);
-        }
+    info_atomo = obter_atomo();
+    lookahead = info_atomo.atomo;
 
-        printf("\n");
-    } while (info_atomo.atomo != ERRO && info_atomo.atomo != EOS);
+    program();
+
+    printf("Programa sintaticamente correto");
+
     //******** FIM - compilador *******
     return 0;
 }
@@ -666,6 +660,12 @@ int eh_sinal(char sinal)
 // funções sintáticas e afins.
 void consome(Tatomo atomo)
 {
+    while (lookahead == COMENTARIO)
+    {
+        info_atomo = obter_atomo();
+        lookahead = info_atomo.atomo;
+    }
+
     if (lookahead == atomo)
     {
         info_atomo = obter_atomo();
@@ -673,7 +673,8 @@ void consome(Tatomo atomo)
     }
     else
     {
-        printf("Erro sintático");
+        printf("#%d: Erro sintatico: esperado [%s], encontrado [%s]", linha, strAtomo[atomo], strAtomo[lookahead]);
+        exit(1);
     }
 }
 
@@ -703,12 +704,19 @@ void var_decl()
 {
     type_specifier();
     var_decl_list();
-    consome(FECHA_CHAVES);
+    consome(PVIR);
 }
 
 void type_specifier()
 {
-    consome(lookahead);
+    if (lookahead == INT || lookahead == CHAR)
+    {
+        consome(lookahead);
+    }
+    else
+    {
+        consome(IDENTIFICADOR); // erro
+    }
 }
 
 void var_decl_list()
