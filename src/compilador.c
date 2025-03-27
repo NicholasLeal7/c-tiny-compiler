@@ -47,11 +47,10 @@ typedef struct
     Tatomo atomo;
     int linha;
     int atributo_numero;
-    char atributo_ID[15];
+    char atributo_ID[16];
 } TInfoAtomo;
 
 // LEXICO
-char strOperadores[] = {};
 char *strAtomo[] = {
     "ERRO",          // 0
     "IDENTIFICADOR", // 1
@@ -165,9 +164,6 @@ int eh_sinal(char sinal);
 // palavra em teste
 // char *entrada = "/* \nprograma le dois numessros inteir e encontra o maior  \n*/ \nvoid main ( void ) { \n int aaaaaaaa, num_2, maior; \nreadint(num_1); \nreadint(num_2); \nif ( num_1 > num_2 )  \n    maior = num_1; \nelse \n    maior = num_2; \n \nwriteint(maior); // imprime o maior valor \n}";
 char *entrada;
-
-#include <stdio.h>
-#include <stdlib.h>
 
 int main()
 {
@@ -820,7 +816,7 @@ void compound_smt()
 {
     consome(ABRE_CHAVES);
     var_decl();
-    while (lookahead == READINT || lookahead == WRITEINT || lookahead == WHILE || lookahead == IF || lookahead == IDENTIFICADOR)
+    while (lookahead == ABRE_CHAVES || lookahead == READINT || lookahead == WRITEINT || lookahead == WHILE || lookahead == IF || lookahead == IDENTIFICADOR)
     {
         stmt();
     }

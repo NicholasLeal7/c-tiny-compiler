@@ -1,11 +1,12 @@
 /* 
 programa le dois numeros inteiros e encontra o maior  
 */ 
+
 void main ( void ) { 
 int num_1, num_2, maior; 
 readint(num_1); 
 readint(num_2); 
-if ( num_1 > num_2 )  
+if ( num_1 == 0x129ABC)  
     maior = num_1; 
 else 
     maior = num_2; 
