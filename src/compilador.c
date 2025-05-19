@@ -1,3 +1,7 @@
+// Integrantes
+// Nome: Nicholas dos Santos Leal       RA: 10409210
+// Nome: Patrick Alves Gonçalves        RA: 10409363
+
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h> // strncpy
@@ -794,6 +798,17 @@ void consome(Tatomo atomo)
 
         info_atomo = obter_atomo();
         lookahead = info_atomo.atomo;
+
+        //**** INICIO - CONSERTO DO BUG ****
+        while (lookahead == COMENTARIO)
+        {
+            // exibição do token reconhecido
+            printf("#  %02d: %s\n", info_atomo.linha, strAtomo[lookahead]);
+
+            info_atomo = obter_atomo();
+            lookahead = info_atomo.atomo;
+        }
+        //**** FIM - CONSERTO DO BUG ****
     }
     else
     {
