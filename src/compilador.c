@@ -54,6 +54,13 @@ typedef struct
     char atributo_ID[16];
 } TInfoAtomo;
 
+typedef struct _TNo
+{
+    char ID[16];
+    int endereco;
+    struct _TNo *prox;
+} TNo;
+
 // LEXICO
 char *strAtomo[] = {
     "ERRO",          // 0
@@ -128,8 +135,10 @@ char *strAtomoSimbolos[] = {
     "EOS"            // 33
 };
 int linha = 1;
+int rotulo = 1;
 Tatomo lookahead;
 TInfoAtomo info_atomo;
+TNo tabela_simbolos;
 
 // declaração de função do léxico
 TInfoAtomo obter_atomo();
@@ -161,9 +170,16 @@ void sum();
 void term();
 void factor();
 
+// declaracao funções semântico
+int busca_tabela_simbolos(char *identificador);
+void adiciona_tabela_simbolos(char *identificador);
+void imprime_tabela_simbolos();
+int buscar_proximo_endereco();
+
 // declaração de funções auxiliares que funcionam como o isdigit e isalpha só que para operadores e sinais
 int eh_operador(char operador);
 int eh_sinal(char sinal);
+int proximo_rotulo();
 
 // palavra em teste
 // char *entrada = "/* \nprograma le dois numessros inteir e encontra o maior  \n*/ \nvoid main ( void ) { \n int aaaaaaaa, num_2, maior; \nreadint(num_1); \nreadint(num_2); \nif ( num_1 > num_2 )  \n    maior = num_1; \nelse \n    maior = num_2; \n \nwriteint(maior); // imprime o maior valor \n}";
@@ -174,10 +190,10 @@ int main()
     //******** INICIO - apresentação e leitura do arquivo *******
     printf("Compilador TINY-C\n\n");
 
-    char nome_arquivo[256];
+    char nome_arquivo[256] = "entrada.txt";
 
-    printf("Digite o nome do arquivo:\n");
-    scanf("%255s", nome_arquivo);
+    // printf("Digite o nome do arquivo:\n");
+    //  scanf("%255s", nome_arquivo);
     //******** FIM - apresentação e leitura do arquivo *******
 
     //******** INICIO - leitura do arquivo *******
@@ -217,7 +233,15 @@ int main()
     info_atomo = obter_atomo();
     lookahead = info_atomo.atomo;
 
+    tabela_simbolos.ID[0] = '\0';
+    tabela_simbolos.endereco = -1;
+    tabela_simbolos.prox = NULL;
+
+    printf("\nINPP\n");
     program();
+    printf("\nPARA\n\n");
+
+    imprime_tabela_simbolos();
 
     printf("\n%d linhas analisadas, programa sintaticamente correto.", linha);
     //******** FIM - compilador *******
@@ -776,7 +800,7 @@ void consome(Tatomo atomo)
     while (lookahead == COMENTARIO)
     {
         // exibição do token reconhecido
-        printf("#  %02d: %s\n", info_atomo.linha, strAtomo[lookahead]);
+        // printf("#  %02d: %s\n", info_atomo.linha, strAtomo[lookahead]);
 
         info_atomo = obter_atomo();
         lookahead = info_atomo.atomo;
@@ -785,16 +809,16 @@ void consome(Tatomo atomo)
     if (lookahead == atomo)
     {
         // exibição do token reconhecido
-        printf("#  %02d: %s", info_atomo.linha, strAtomo[lookahead]);
+        // printf("#  %02d: %s", info_atomo.linha, strAtomo[lookahead]);
         if (info_atomo.atomo == IDENTIFICADOR || info_atomo.atomo == CHARCONST)
         {
-            printf(" | %s", info_atomo.atributo_ID);
+            // printf(" | %s", info_atomo.atributo_ID);
         }
         else if (info_atomo.atomo == INTCONST)
         {
-            printf(" | %d", info_atomo.atributo_numero);
+            // printf(" | %d", info_atomo.atributo_numero);
         }
-        printf("\n");
+        // printf("\n");
 
         info_atomo = obter_atomo();
         lookahead = info_atomo.atomo;
@@ -803,7 +827,7 @@ void consome(Tatomo atomo)
         while (lookahead == COMENTARIO)
         {
             // exibição do token reconhecido
-            printf("#  %02d: %s\n", info_atomo.linha, strAtomo[lookahead]);
+            // printf("#  %02d: %s\n", info_atomo.linha, strAtomo[lookahead]);
 
             info_atomo = obter_atomo();
             lookahead = info_atomo.atomo;
@@ -862,10 +886,27 @@ void type_specifier()
 
 void var_decl_list()
 {
+    //*******************INICIO ADD TABELA SIMBOLOS*******************
+    if (busca_tabela_simbolos(info_atomo.atributo_ID) != -1)
+    { // encontrou uma variavel com o mesmo nome
+        printf("Erro semantico: identificador '%s' ja foi declarado anteriormente.\n", info_atomo.atributo_ID);
+        exit(1);
+    }
+    adiciona_tabela_simbolos(info_atomo.atributo_ID); // pode adicionar
+    //*******************FIM ADD TABELA SIMBOLOS*******************
     variable_id();
+
     while (lookahead == VIR)
     {
         consome(VIR);
+        //*******************INICIO ADD TABELA SIMBOLOS*******************
+        if (busca_tabela_simbolos(info_atomo.atributo_ID) != -1)
+        { // encontrou uma variavel com o mesmo nome
+            printf("Erro semantico: identificador '%s' ja foi declarado anteriormente.\n", info_atomo.atributo_ID);
+            exit(1);
+        }
+        adiciona_tabela_simbolos(info_atomo.atributo_ID); // pode adicionar
+        //*******************FIM ADD TABELA SIMBOLOS*******************
         variable_id();
     }
 }
@@ -1018,6 +1059,11 @@ void factor()
 {
     if (lookahead == INTCONST || lookahead == CHARCONST || lookahead == IDENTIFICADOR)
     {
+        if (lookahead == IDENTIFICADOR && busca_tabela_simbolos(info_atomo.atributo_ID) == -1)
+        {
+            printf("Erro semantico: identificador '%s' nao declarado.\n", info_atomo.atributo_ID);
+            exit(1);
+        }
         consome(lookahead);
     }
     else if (lookahead == ABRE_PAR)
@@ -1030,4 +1076,83 @@ void factor()
     {
         consome(IDENTIFICADOR); // erro
     }
+}
+
+// funções semantico
+int busca_tabela_simbolos(char *identificador)
+{
+    TNo *atual = tabela_simbolos.prox; // Ignora o nó cabeça
+
+    while (atual != NULL)
+    {
+        if (strcmp(atual->ID, identificador) == 0)
+        {
+            return atual->endereco;
+        }
+        atual = atual->prox;
+    }
+
+    // Se chegou aqui, o identificador não foi encontrado
+    return -1;
+}
+
+int buscar_proximo_endereco()
+{
+    TNo *atual = &tabela_simbolos;
+
+    // Percorre até o último nó
+    while (atual->prox != NULL)
+    {
+        atual = atual->prox;
+    }
+
+    // Se só tiver o nó cabeça, retornamos 0
+    if (atual == &tabela_simbolos)
+        return 0;
+
+    return atual->endereco + 1;
+}
+
+void adiciona_tabela_simbolos(char *identificador)
+{
+    TNo *novo = (TNo *)malloc(sizeof(TNo));
+    if (!novo)
+    {
+        printf("Erro de alocação\n");
+        exit(1);
+    }
+
+    // Preenche o novo nó
+    strncpy(novo->ID, identificador, sizeof(novo->ID));
+    novo->ID[sizeof(novo->ID) - 1] = '\0'; // garante terminação
+    novo->endereco = buscar_proximo_endereco();
+    novo->prox = NULL;
+
+    // Insere no final da lista
+    TNo *atual = &tabela_simbolos;
+    while (atual->prox != NULL)
+    {
+        atual = atual->prox;
+    }
+
+    atual->prox = novo;
+}
+
+void imprime_tabela_simbolos()
+{
+    printf("\nTABELA DE SIMBOLOS\n");
+
+    TNo *atual = tabela_simbolos.prox;
+
+    while (atual != NULL)
+    {
+        printf("%-8s | Endereco: %d\n", atual->ID, atual->endereco);
+        atual = atual->prox;
+    }
+}
+
+// funcoes geração de código intermediário
+int proximo_rotulo()
+{
+    return rotulo++;
 }

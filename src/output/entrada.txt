@@ -1,0 +1,10 @@
+
+void main( void ) {
+	//
+	int teste, v1, v2, v2;
+	teste = 0x5 + v2;
+
+	if(v1 > v2){
+
+	}
+}
