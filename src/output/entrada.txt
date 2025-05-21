@@ -1,10 +1,14 @@
-
-void main( void ) {
-	//
-	int teste, v1, v2, v2;
-	teste = 0x5 + v2;
-
-	if(v1 > v2){
-
-	}
+/* 
+programa calcula o fatorial de um numero lido 
+*/ 
+void main ( void ) { 
+  int fat,num,cont; 
+  readint(num); 
+  fat = 0x1; 
+  cont = 0x2; 
+  while( fat + fat * num / num * fat + cont ){ 
+    fat = fat * cont; 
+    cont = cont + 0x1; 
+  } 
+  writeint(fat); // imprime o fatorial calculado 
 }

@@ -237,9 +237,7 @@ int main()
     tabela_simbolos.endereco = -1;
     tabela_simbolos.prox = NULL;
 
-    printf("\nINPP\n");
     program();
-    printf("\nPARA\n\n");
 
     imprime_tabela_simbolos();
 
@@ -848,14 +846,18 @@ void program()
     consome(ABRE_PAR);
     consome(VOID);
     consome(FECHA_PAR);
+    printf("INPP\n"); // inicializa o programa
     compound_smt();
+    printf("PARA\n"); // finaliza o programa
 }
 
 void compound_smt()
 {
     consome(ABRE_CHAVES);
     var_decl();
-    while (lookahead == ABRE_CHAVES || lookahead == READINT || lookahead == WRITEINT || lookahead == WHILE || lookahead == IF || lookahead == IDENTIFICADOR)
+    printf("AMEM %d\n", buscar_proximo_endereco());
+    while (lookahead == ABRE_CHAVES || lookahead == READINT || lookahead == WRITEINT ||
+           lookahead == WHILE || lookahead == IF || lookahead == IDENTIFICADOR)
     {
         stmt();
     }
@@ -943,7 +945,13 @@ void stmt()
     {
         consome(READINT);
         consome(ABRE_PAR);
+
+        int endereco = busca_tabela_simbolos(info_atomo.atributo_ID);
         consome(IDENTIFICADOR);
+
+        printf("LEIT\n");
+        printf("ARMZ %d\n", endereco);
+
         consome(FECHA_PAR);
         consome(PVIR);
     }
@@ -952,6 +960,7 @@ void stmt()
         consome(WRITEINT);
         consome(ABRE_PAR);
         expr();
+        printf("IMPR\n");
         consome(FECHA_PAR);
         consome(PVIR);
     }
@@ -963,34 +972,67 @@ void stmt()
 
 void assig_stmt()
 {
+    int endereco;
+    char id[16];
+
+    strcpy(id, info_atomo.atributo_ID);
+    endereco = busca_tabela_simbolos(id);
+
     consome(IDENTIFICADOR);
     consome(RECEBE);
     expr();
+
+    printf("ARMZ %d\n", endereco);
     consome(PVIR);
 }
 
 void cond_stmt()
 {
+    int rotulo_else = proximo_rotulo();
+    int rotulo_fim = proximo_rotulo();
+
     consome(IF);
     consome(ABRE_PAR);
     expr();
     consome(FECHA_PAR);
+
+    printf("DSVF L%d\n", rotulo_else);
+
     stmt();
 
     if (lookahead == ELSE)
     {
+        printf("DSVS L%d\n", rotulo_fim);
+        printf("L%d: NADA\n", rotulo_else);
         consome(ELSE);
         stmt();
     }
+    else
+    {
+        printf("L%d: NADA\n", rotulo_else);
+    }
+
+    printf("L%d: NADA\n", rotulo_fim);
 }
 
 void while_stmt()
 {
+    int rotulo_inicio = proximo_rotulo();
+    int rotulo_fim = proximo_rotulo();
+
+    printf("L%d: NADA\n", rotulo_inicio);
+
     consome(WHILE);
     consome(ABRE_PAR);
     expr();
     consome(FECHA_PAR);
+
+    printf("DSVF L%d\n", rotulo_fim);
+
     stmt();
+
+    printf("DSVS L%d\n", rotulo_inicio);
+    printf("L%d: NADA\n", rotulo_fim);
 }
 
 void expr()
@@ -1000,6 +1042,7 @@ void expr()
     {
         consome(OR);
         conjunction();
+        printf("DISJ\n");
     }
 }
 
@@ -1010,16 +1053,43 @@ void conjunction()
     {
         consome(AND);
         comparision();
+        printf("CONJ\n");
     }
 }
 
 void comparision()
 {
     sum();
-    if (lookahead == MENOR || lookahead == MENOR_IGUAL || lookahead == IGUAL || lookahead == DIFERENTE || lookahead == MAIOR || lookahead == MAIOR_IGUAL)
+    if (lookahead == MENOR || lookahead == MENOR_IGUAL || lookahead == IGUAL ||
+        lookahead == DIFERENTE || lookahead == MAIOR || lookahead == MAIOR_IGUAL)
     {
+        Tatomo operador = lookahead;
         relation();
         sum();
+
+        switch (operador)
+        {
+        case MENOR:
+            printf("CMME\n");
+            break;
+        case MENOR_IGUAL:
+            printf("CMEG\n");
+            break;
+        case IGUAL:
+            printf("CMIG\n");
+            break;
+        case DIFERENTE:
+            printf("CMDG\n");
+            break;
+        case MAIOR:
+            printf("CMMA\n");
+            break;
+        case MAIOR_IGUAL:
+            printf("CMAG\n");
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -1040,8 +1110,18 @@ void sum()
     term();
     while (lookahead == OP_SOMA || lookahead == OP_SUBT)
     {
-        consome(lookahead);
-        term();
+        if (lookahead == OP_SOMA)
+        {
+            consome(OP_SOMA);
+            term();
+            printf("SOMA\n");
+        }
+        else
+        {
+            consome(OP_SUBT);
+            term();
+            printf("SUBT\n");
+        }
     }
 }
 
@@ -1050,8 +1130,18 @@ void term()
     factor();
     while (lookahead == OP_MULT || lookahead == OP_DIV)
     {
-        consome(lookahead);
-        factor();
+        if (lookahead == OP_MULT)
+        {
+            consome(OP_MULT);
+            factor();
+            printf("MULT\n");
+        }
+        else
+        {
+            consome(OP_DIV);
+            factor();
+            printf("DIVI\n");
+        }
     }
 }
 
@@ -1059,12 +1149,27 @@ void factor()
 {
     if (lookahead == INTCONST || lookahead == CHARCONST || lookahead == IDENTIFICADOR)
     {
-        if (lookahead == IDENTIFICADOR && busca_tabela_simbolos(info_atomo.atributo_ID) == -1)
+        if (lookahead == IDENTIFICADOR)
         {
-            printf("Erro semantico: identificador '%s' nao declarado.\n", info_atomo.atributo_ID);
-            exit(1);
+            if (busca_tabela_simbolos(info_atomo.atributo_ID) == -1)
+            {
+                printf("Erro semantico: identificador '%s' nao declarado.\n", info_atomo.atributo_ID);
+                exit(1);
+            }
+            int endereco = busca_tabela_simbolos(info_atomo.atributo_ID);
+            consome(IDENTIFICADOR);
+            printf("CRVL %d\n", endereco);
         }
-        consome(lookahead);
+        else if (lookahead == INTCONST)
+        {
+            printf("CRCT %d\n", info_atomo.atributo_numero);
+            consome(INTCONST);
+        }
+        else
+        {
+            printf("CRCT %d\n", info_atomo.atributo_ID[0]);
+            consome(CHARCONST);
+        }
     }
     else if (lookahead == ABRE_PAR)
     {
@@ -1081,7 +1186,7 @@ void factor()
 // funções semantico
 int busca_tabela_simbolos(char *identificador)
 {
-    TNo *atual = tabela_simbolos.prox; // Ignora o nó cabeça
+    TNo *atual = tabela_simbolos.prox; // ignora o nó cabeça
 
     while (atual != NULL)
     {
@@ -1092,7 +1197,7 @@ int busca_tabela_simbolos(char *identificador)
         atual = atual->prox;
     }
 
-    // Se chegou aqui, o identificador não foi encontrado
+    // se chegou aqui, o identificador não foi encontrado
     return -1;
 }
 
@@ -1100,13 +1205,13 @@ int buscar_proximo_endereco()
 {
     TNo *atual = &tabela_simbolos;
 
-    // Percorre até o último nó
+    // percorre até o último nó
     while (atual->prox != NULL)
     {
         atual = atual->prox;
     }
 
-    // Se só tiver o nó cabeça, retornamos 0
+    // se só tiver o nó cabeça, retornamos 0
     if (atual == &tabela_simbolos)
         return 0;
 
@@ -1122,13 +1227,13 @@ void adiciona_tabela_simbolos(char *identificador)
         exit(1);
     }
 
-    // Preenche o novo nó
+    // preenche o novo nó
     strncpy(novo->ID, identificador, sizeof(novo->ID));
     novo->ID[sizeof(novo->ID) - 1] = '\0'; // garante terminação
     novo->endereco = buscar_proximo_endereco();
     novo->prox = NULL;
 
-    // Insere no final da lista
+    // insere no final da lista
     TNo *atual = &tabela_simbolos;
     while (atual->prox != NULL)
     {
